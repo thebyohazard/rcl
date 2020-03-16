@@ -512,3 +512,22 @@ TEST_F(TestTimerFixture, test_ros_time_wakes_wait) {
   EXPECT_TRUE(timer_was_ready);
   EXPECT_LT(finish - start, std::chrono::milliseconds(100));
 }
+
+TEST_F(TestTimerFixture, test_timer_clock) {
+  rcl_ret_t ret;
+
+  rcl_clock_t * clock_impl;
+  rcl_clock_t clock;
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  rcl_timer_t timer = rcl_get_zero_initialized_timer();
+
+  ret = rcl_clock_init(RCL_STEADY_TIME, &clock, &allocator);
+  ASSERT_EQ(RCL_RET_OK, ret) << rcl_get_error_string().str;
+
+  ret = rcl_timer_init(
+    &timer, &clock, this->context_ptr, RCL_MS_TO_NS(5), nullptr, rcl_get_default_allocator());
+  ASSERT_EQ(RCL_RET_OK, ret) << rcl_get_error_string().str;
+
+  EXPECT_EQ(RCL_RET_OK, rcl_timer_clock(&timer, &clock_impl));
+  EXPECT_EQ(clock_impl, &clock);
+}

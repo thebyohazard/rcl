@@ -790,9 +790,8 @@ TEST(CLASSNAME(rcl_time, RMW_IMPLEMENTATION), fail_override) {
   rcl_allocator_t allocator = rcl_get_default_allocator();
   bool result;
   rcl_time_point_value_t set_point = 1000000000ull;
-  ASSERT_EQ(
-    RCL_RET_OK, rcl_clock_init(
-      RCL_CLOCK_UNINITIALIZED, &ros_clock, &allocator)) << rcl_get_error_string().str;
+  ASSERT_EQ(RCL_RET_OK, rcl_clock_init(
+    RCL_CLOCK_UNINITIALIZED, &ros_clock, &allocator))  << rcl_get_error_string().str;
 
   EXPECT_EQ(RCL_RET_ERROR, rcl_enable_ros_time_override(&ros_clock));
   EXPECT_EQ(RCL_RET_ERROR, rcl_disable_ros_time_override(&ros_clock));

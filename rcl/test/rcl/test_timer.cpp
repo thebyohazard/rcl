@@ -575,9 +575,13 @@ TEST_F(TestPreInitTimer, test_timer_call) {
    */
   int64_t next_call_start, next_call_end;
   int64_t old_period = 0;
+  bool ready_call = false;
   times_called = 0;
 
   EXPECT_EQ(RCL_RET_OK, rcl_timer_get_time_until_next_call(&timer, &next_call_start));
+  while (!ready_call) {
+    EXPECT_EQ(RCL_RET_OK, rcl_timer_is_ready(&timer, &ready_call));
+  }
   ASSERT_EQ(RCL_RET_OK, rcl_timer_call(&timer)) << rcl_get_error_string().str;
   EXPECT_EQ(times_called, 1);
 
@@ -590,6 +594,9 @@ TEST_F(TestPreInitTimer, test_timer_call) {
   next_call_start = next_call_end;
   ASSERT_EQ(RCL_RET_OK, rcl_timer_exchange_period(&timer, 0, &old_period));
   EXPECT_EQ(RCL_S_TO_NS(1), old_period);
+  while (!ready_call) {
+    EXPECT_EQ(RCL_RET_OK, rcl_timer_is_ready(&timer, &ready_call));
+  }
   ASSERT_EQ(RCL_RET_OK, rcl_timer_call(&timer)) << rcl_get_error_string().str;
   EXPECT_EQ(times_called, 4);
   EXPECT_EQ(RCL_RET_OK, rcl_timer_get_time_until_next_call(&timer, &next_call_end));
@@ -623,4 +630,35 @@ TEST_F(TestPreInitTimer, test_timer_reset) {
   ASSERT_EQ(RCL_RET_OK, rcl_timer_reset(&timer));
   EXPECT_EQ(RCL_RET_OK, rcl_timer_call(&timer)) << rcl_get_error_string().str;
   EXPECT_EQ(times_called, 3);
+}
+
+TEST_F(TestPreInitTimer, test_time_since_last_call) {
+  rcl_time_point_value_t time_sice_next_call_start, time_sice_next_call_end;
+
+  ASSERT_EQ(RCL_RET_OK, rcl_timer_get_time_since_last_call(&timer, &time_sice_next_call_start));
+  ASSERT_EQ(RCL_RET_OK, rcl_timer_get_time_since_last_call(&timer, &time_sice_next_call_end));
+  EXPECT_GT(time_sice_next_call_end, time_sice_next_call_start);
+}
+
+TEST_F(TestPreInitTimer, test_timer_get_period) {
+  int64_t period;
+  ASSERT_EQ(RCL_RET_OK, rcl_timer_get_period(&timer, &period));
+  EXPECT_EQ(RCL_S_TO_NS(1), period);
+
+  EXPECT_EQ(RCL_RET_INVALID_ARGUMENT, rcl_timer_get_period(nullptr, &period));
+  EXPECT_EQ(RCL_RET_INVALID_ARGUMENT, rcl_timer_get_period(&timer, nullptr));
+}
+
+TEST_F(TestPreInitTimer, test_timer_get_allocator) {
+  const rcl_allocator_t * allocator_returned;
+  allocator_returned = rcl_timer_get_allocator(&timer);
+
+  //allocator_returned = rcl_timer_get_allocator(&timer);
+  //ASSERT_EQ(allocator, (*allocator_returned));
+  //ASSERT_EQ( (int64_t *)&allocator, (int64_t *)allocator_returned);
+  //
+
+  EXPECT_EQ(NULL, rcl_timer_get_allocator(nullptr));
+  // Non related test
+  EXPECT_EQ(RCL_RET_INVALID_ARGUMENT, rcl_timer_get_period(&timer, nullptr));
 }
